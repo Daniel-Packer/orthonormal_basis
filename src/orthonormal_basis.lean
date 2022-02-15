@@ -20,15 +20,17 @@ local notation `⟪`x`, `y`⟫` := @inner 𝕜 _ _ x y
 variables (ι) (𝕜) (E)
 
 def euclidean_space.single {𝕜 : Type*} {ι : Type*} [fintype ι] [is_R_or_C 𝕜] (i : ι) (a : 𝕜): euclidean_space 𝕜 ι := 
-  lp.single 2 i (a : 𝕜)
+  -- lp.single 2 i (a : 𝕜)
+  set.indicator {i} (λ j, a)
 
 
 theorem euclidean_space.single_apply {𝕜 : Type*} {ι : Type*} [fintype ι] [is_R_or_C 𝕜] (i : ι) (a : 𝕜) (j : ι) : 
   (euclidean_space.single i a) j = dite (j = i) (λ (h : j = i), a) (λ (h : ¬j = i), 0) :=
   begin
     rw euclidean_space.single,
-    rw lp.single_apply,
-    simp only [dite_eq_ite, eq_rec_constant, dif_ctx_congr],
+    rw dite_eq_ite,
+    rw set.indicator,
+    simp only [set.mem_singleton_iff],
   end
 
 lemma euclidean_space.inner_single_left (i : ι) (a : 𝕜) (v : euclidean_space 𝕜 ι) : 
@@ -42,7 +44,7 @@ lemma euclidean_space.inner_single_left (i : ι) (a : 𝕜) (v : euclidean_space
       congr,
       skip,
       funext,
-      rw lp.single_apply 2 i a x,
+      rw set.indicator,
     end,
     simp only [dite_eq_ite, eq_rec_constant, dif_ctx_congr, finset.sum_congr],
     conv
@@ -58,6 +60,7 @@ lemma euclidean_space.inner_single_left (i : ι) (a : 𝕜) (v : euclidean_space
     end,
     simp only [finset.mem_univ,
  if_true,
+ set.mem_singleton_iff,
  mul_eq_mul_left_iff,
  zero_mul,
  true_or,
@@ -119,6 +122,31 @@ begin
   rw euclidean_space.single_apply,
   simp only [mul_boole, dite_eq_ite, eq_self_iff_true, map_one],
 end
+
+protected lemma sum_repr_symm (b : orthonormal_basis ι 𝕜 E) (v : euclidean_space 𝕜 ι) :
+  ∑ i , v i • b i = (b.repr.symm v) :=
+  begin
+    have : b.repr (∑ i, v i • b i) = v :=
+    begin
+      have : ⇑(b.repr) = (b.repr.to_linear_isometry.to_linear_map) :=
+      begin
+        simp only [linear_isometry.coe_to_linear_map, fun_like.coe_fn_eq, linear_isometry_equiv.coe_to_linear_isometry, eq_self_iff_true],
+      end,
+    rw this,
+    simp_rw [linear_map.map_sum, linear_map.map_smul, ← this],
+    ext i,
+    change (∑ (c : ι), (λ x, v x • (b.repr) (b x)) c) i = v i,
+    rw [@fintype.sum_apply _ _ ι _ _ i (λ x, v x • (b.repr) (b x))],
+    simp only [algebra.id.smul_eq_mul, orthonormal_basis.repr_self, pi.smul_apply, finset.sum_congr],
+    simp_rw [euclidean_space.single, set.indicator, mul_ite, mul_zero],
+    simp only [mul_one, finset.mem_univ, if_true, set.mem_singleton_iff, eq_self_iff_true, finset.sum_congr, finset.sum_ite_eq],
+    end,
+    conv_rhs
+    begin
+    rw ← this,
+    end,
+    simp only [linear_isometry_equiv.symm_apply_apply, eq_self_iff_true],
+  end
 
 variables {ι} {𝕜} {E}
 variable {v : ι → E}
